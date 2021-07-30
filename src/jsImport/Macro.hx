@@ -46,7 +46,7 @@ class Macro {
         }
 	var resultPath = Compiler.getOutput().directory();
 			if (Sys.systemName().contains('Mac')) {
-				resultPath += '~'
+				resultPath += '/tmp';
 			}
       var tmp = resultPath + '/tmp${Std.random(1 << 29)}.js';
       tmp.saveContent(lines.join('\n'));
