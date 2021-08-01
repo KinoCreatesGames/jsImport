@@ -4,55 +4,56 @@ package jsImport;
 import haxe.macro.Compiler;
 import haxe.macro.Context.*;
 
-
 using haxe.io.Path;
 using StringTools;
 using sys.io.File;
 using sys.FileSystem;
 
 class Macro {
-  static final META = ':js.import';
-  static function init() {
-    onGenerate(types -> {
-      var lines = [];
+	static final META = ':js.import';
 
-      for (t in types)
-        switch t {
-          case TInst(_.get() => cl = _.meta.extract(META) => meta, _) if (meta.length > 0):
+	static function init() {
+		onGenerate(types -> {
+			var lines = [];
 
-            if (!cl.isExtern)
-              error('@$META can only be used on extern classes', meta[0].pos);
+			for (t in types)
+				switch t {
+					case TInst(_.get() => cl = _.meta.extract(META) => meta, _) if (meta.length > 0):
+						if (!cl.isExtern)
+							error('@$META can only be used on extern classes', meta[0].pos);
 
-            var id =
-              if (cl.isPrivate) cl.module.replace('.', '_') + '__' + cl.name;
-              else cl.pack.concat([cl.name]).join('_');
+						var id = if (cl.isPrivate) cl.module.replace('.', '_') + '__' + cl.name; else cl.pack.concat([cl.name]).join('_');
 
-            cl.meta.remove(':native');
-            cl.meta.add(':native', [macro $v{id}], (macro null).pos);
+						if (cl.meta.has(':native')) {
+							// Use the standard meta tag
+						} else {
+							cl.meta.remove(':native');
+							cl.meta.add(':native', [macro $v{id}], (macro null).pos);
+						}
 
-            switch meta {
-              case [{ params: [macro @star $v{(v:String)}] }]:
-                lines.push('import * as $id from "$v";');
-              case [{ params: [macro @default $v{(v:String)}] }]:
-                lines.push('import $id from "$v";');
-              case [{ params: [macro $v{(v:String)}] }]:
-                lines.push('import { $id } from "$v";');
-              case [{ pos: pos }]:
-                error('@$META requires a string parameter, optionally preceeded by an identifier', pos);
-              default:
-                error('Duplicate @$META', meta[0].pos);
-            }
-          default:
-        }
-	var resultPath = Compiler.getOutput().directory();
+						switch meta {
+							case [{params: [macro @star $v{(v : String)}]}]:
+								lines.push('import * as $id from "$v";');
+							case [{params: [macro @default $v{(v : String)}]}]:
+								lines.push('import $id from "$v";');
+							case [{params: [macro $v{(v : String)}]}]:
+								lines.push('import { $id } from "$v";');
+							case [{pos: pos}]:
+								error('@$META requires a string parameter, optionally preceeded by an identifier', pos);
+							default:
+								error('Duplicate @$META', meta[0].pos);
+						}
+					default:
+				}
+			var resultPath = Compiler.getOutput().directory();
 			if (Sys.systemName().contains('Mac')) {
 				resultPath += '/tmp';
 			}
-      var tmp = resultPath + '/tmp${Std.random(1 << 29)}.js';
-      tmp.saveContent(lines.join('\n'));
-      Compiler.includeFile(tmp);
-      onAfterGenerate(tmp.deleteFile);
-    });
-  }
+			var tmp = resultPath + '/tmp${Std.random(1 << 29)}.js';
+			tmp.saveContent(lines.join('\n'));
+			Compiler.includeFile(tmp);
+			onAfterGenerate(tmp.deleteFile);
+		});
+	}
 }
 #end
