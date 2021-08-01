@@ -1,5 +1,6 @@
 package jsImport;
 
+import haxe.macro.ExprTools;
 #if macro
 import haxe.macro.Compiler;
 import haxe.macro.Context.*;
@@ -26,6 +27,10 @@ class Macro {
 
 						if (cl.meta.has(':native')) {
 							// Use the standard meta tag
+							var result = cl.meta.extract(':native');
+							if (result.length > 0) {
+								id = ExprTools.getValue(result[0].params[0]);
+							}
 						} else {
 							cl.meta.remove(':native');
 							cl.meta.add(':native', [macro $v{id}], (macro null).pos);
